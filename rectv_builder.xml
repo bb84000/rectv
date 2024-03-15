@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project rectv with Jar-in-Jar Loader">
+	<!--ANT 1.7 is required -->
+	<property environment="env"/>
+	<property name="ECLIPSE_HOME" value="C:\Program Files\Eclipse"/>
+	<property name="debuglevel" value="source,lines,vars"/>
+	<property name="target" value="1.7"/>
+	<property name="source" value="1.7"/>
+	<property name="launch4j.dir" value="C:\Program Files (x86)\Launch4j" />
+	<property name="external.libs.dir" value="C:\Users\Bernard\git\libs/"/>
+	
+	<path id="rectv.classpath">
+		<fileset dir="${external.libs.dir}guessencoding" includes="guessencoding-1.4.jar"/>
+	 </path>
+	
+	<tstamp>
+		<format property="timestamp" pattern="yyyy-MM-dd HH:mm:ss" />
+	</tstamp>
+	
+	<target name="increment-version-code">
+		<propertyfile file="C:\Users\Bernard\git\rectv\src\resources\version.properties">
+			<entry key="build.number" type="int" default="1" operation="+" value="1" />
+		</propertyfile>
+	</target>
+	
+	<property file="C:\Users\Bernard\git\rectv\src\resources\version.properties"/>
+	<property name="bldnum" value="${build.number}"/>
+	<property name="spever" value="${Specification-Version}"/>
+	<property name="spevnd" value="${Specification-Vendor}" />
+	
+	<!-- We delete bin directory created by a previous build -->
+	<!-- to be sure it exists, we create it, easyer than testing its existence !!!-->
+	<target name="clean">
+		<mkdir dir="bin"/>
+		<delete includeEmptyDirs="true">
+			<fileset dir="bin" />
+		</delete>
+		<mkdir dir="bin/bb/" />
+		<mkdir dir="bin/rectv/" />
+		<mkdir dir="bin/resources/" />
+	</target>
+	
+	<target name="update_properties">
+		<propertyfile file="C:\Users\Bernard\git\rectv\src\resources\version.properties">
+			<!--entry key="Specification-Version" value= "${spever}" />
+			<entry key="Specification-Vendor" value="${spevnd}" /-->
+			<entry key="Implementation-Version" value="${bldnum}"/>
+			<entry key="Build-Date" value= "${timestamp}"/>
+		</propertyfile>
+	</target>
+	
+	<target name="compile">
+		<javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+			<src path="."/>
+			<classpath refid="rectv.classpath"/>
+		</javac>
+		<!-- copy resources and libs in bin directory to allow run -->
+		<copy todir="bin/resources">
+			<fileset dir="src/resources"/>
+		</copy>
+		
+	</target>
+	
+	<target name="create_run_jar">
+		<propertyfile file="C:\Users\Bernard\git\rectv\version.properties"/>
+		<jar destfile="C:/Users/Bernard/git/rectv/rectv.jar">
+			<manifest>
+				<attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
+				<attribute name="Rsrc-Main-Class" value="mergets.rectv"/>
+				<attribute name="Class-Path" value=". " />
+				<attribute name="Rsrc-Class-Path" value="./ guessencoding-1.4.jar"/>
+				<attribute name="Specification-Version" value="${spever}" />
+				<attribute name="Specification-Vendor" value="${spevnd}" />
+				<attribute name="Implementation-Version" value="${bldnum}"/>
+				<attribute name="Build-Date" value="${timestamp}"/>
+			</manifest>
+			<zipfileset src="jar-in-jar-loader.zip"/>
+	        <!-- We do not need a libs folder as the libraries are later placed in the root of the jar file -->
+			<!-- We do not copy resources from this, as the property file is not updated, but from the src folder -->
+			<fileset dir="C:\Users\Bernard\git\rectv\bin">
+           	<exclude name="**/lib/"/>
+            	<exclude name="**/resources/" />
+           </fileset>
+			<zipfileset dir="${external.libs.dir}guessencoding" includes="guessencoding-1.4.jar"/>	
+			<fileset dir="C:\Users\Bernard\git\RecTV\src" >
+				<exclude name="**/*.java"/>
+			</fileset>
+		</jar>
+	</target>
+	
+	<target name="create_win_exe">
+			<taskdef name="launch4j"
+			    classname="net.sf.launch4j.ant.Launch4jTask"
+			    classpath="${launch4j.dir}/launch4j.jar
+			        :${launch4j.dir}/lib/xstream.jar" />
+			
+			<launch4j configFile="l4jcont.xml" 
+				outfile="rectv.exe"
+			    fileVersion="${spever}.${bldnum}" txtFileVersion="${spever}.${bldnum} (beta)" 
+				productVersion="${spever}.${bldnum}" txtProductVersion="${spever}.${bldnum} (beta)"
+				/>
+		</target>
+	
+</project>
